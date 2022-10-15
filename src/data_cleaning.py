@@ -13,11 +13,12 @@ import pandas as pd
 import os
 from pathlib import Path
 from etl_reporte_llamadas import get_data
+from etl_reporte_llamadas import save_data
 from dateutil.parser import parse
 import csv
 
+
 root_dir = Path('.').resolve()
-filename = 'llamadas123_julio_2022.csv'
 
 
 def remover_duplicados_y_nulos(datos):
@@ -30,36 +31,45 @@ def remover_duplicados_y_nulos(datos):
     Returns:
         dataframe: (forma inicial (rows, columns), forma final (rows, columns))
     """
-
     print('forma inicial', datos.shape)
     datos = datos.drop_duplicates()
     print('forma final', datos.shape)
-    datos.fillna('SIN_DATO').value_counts(dropna=True)
+    datos['UNIDAD'].fillna('SIN_DATO').value_counts(dropna=True)
     datos = datos.fillna('SIN_DATO')
-    print(datos)
+    return(datos)
 
 
 def convertir_str_a_num(datos, col='EDAD'):
+    """ Modifica el formato de la columna edad de str a num'
+
+    Args:
+        columna (EDAD): numero de edad de la persona que solicita el servicio
+
+    Returns:
+        dataframe: (Cambio de formato de la columna edad)
+    """
+
     datos['EDAD'] = datos['EDAD'].replace({'SIN_DATO': np.nan})
-    x = '0'
-    def f(x): return x if pd.isna(x) == True else int(x)
-    f(x)
-    datos['EDAD'] = datos['EDAD'].apply(f)
-    datos.info()
+    datos['EDAD'] = datos['EDAD'].astype('float')
+    return(datos)
 
 
 def corregir_fechas_1(datos, col='FECHA_INICIO_DESPLAZAMIENTO_MOVIL'):
-    col = 'FECHA_INICIO_DESPLAZAMIENTO_MOVIL'
     datos[col] = pd.to_datetime(datos[col], errors='coerce')
-    datos.info()
-    return datos
+    return (datos)
+
+
+def corregir_fechas_2(datos, col='RECEPCION'):
+    datos[col] = pd.to_datetime(
+        datos[col], errors='coerce', format='%Y-%m-%d %H:%M:%S')
+    return (datos)
 
 
 def generar_reporte(datos):
-    return datos
+    return (datos)
 
 
-def save_data(datos, filename, step='Limpieza_datos'):
+def save_datos(datos, filename, step='Limpieza_datos'):
 
     out_name = step + '_' + 'llamadas123_julio_2022.csv'
     out_path = os.path.join(root_dir, 'data', 'processed', out_name)
@@ -67,11 +77,16 @@ def save_data(datos, filename, step='Limpieza_datos'):
 
 
 def main():
-    datos = get_data(filename='llamadas123_julio_2022.csv')
-    datos = remover_duplicados_y_nulos(datos) or convertir_str_a_num(
-        datos) or corregir_fechas_1(datos)
+
+    filename = 'llamadas123_julio_2022.csv'
+    datos = get_data(filename)
+    datos = remover_duplicados_y_nulos(datos)
+    datos = convertir_str_a_num(datos)
+    datos = corregir_fechas_1(datos)
+    datos = corregir_fechas_2(datos)
+    datos.info()
     datos = generar_reporte(datos)
-    datos = save_data(datos, filename='llamadas123_julio_2022.csv')
+    datos = save_datos(datos, filename='llamadas123_julio_2022.csv')
 
 
 main()
